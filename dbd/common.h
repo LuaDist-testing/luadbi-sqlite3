@@ -39,6 +39,11 @@
     lua_pushnumber(L, v); \
     lua_rawset(L, -3); 
 
+#define LUA_PUSH_ATTRIB_STRING_BY_LENGTH(n, v, len) \
+    lua_pushstring(L, n); \
+    lua_pushlstring(L, v, len); \
+    lua_rawset(L, -3); 
+
 #define LUA_PUSH_ATTRIB_STRING(n, v) \
     lua_pushstring(L, n); \
     lua_pushstring(L, v); \
@@ -68,6 +73,11 @@
 
 #define LUA_PUSH_ARRAY_STRING(n, v) \
     lua_pushstring(L, v); \
+    lua_rawseti(L, -2, n); \
+    n++;
+
+#define LUA_PUSH_ARRAY_STRING_BY_LENGTH(n, v, len) \
+    lua_pushlstring(L, v, len); \
     lua_rawseti(L, -2, n); \
     n++;
 
@@ -132,15 +142,19 @@ typedef enum lua_push_type {
 #define DBI_ERR_INVALID_STATEMENT   "Invalid statement handle"
 #define DBI_ERR_NOT_IMPLEMENTED     "Method %s.%s is not implemented"
 #define DBI_ERR_QUOTING_STR         "Error quoting string: %s"
+#define DBI_ERR_STATEMENT_BROKEN    "Statement unavailable: database closed"
 
 /*
  * convert string to lower case
  */
-const char *strlower(char *in);
+const char *dbd_strlower(char *in);
 
 /*
  * replace '?' placeholders with .\d+ placeholders
  * to be compatible with the native driver API
  */
-char *replace_placeholders(lua_State *L, char native_prefix, const char *sql);
+char *dbd_replace_placeholders(lua_State *L, char native_prefix, const char *sql);
 
+void dbd_register(lua_State *L, const char *name,
+		  const luaL_Reg *methods, const luaL_Reg *class_methods,
+		  lua_CFunction gc, lua_CFunction tostring);

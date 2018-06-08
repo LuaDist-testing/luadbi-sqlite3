@@ -192,6 +192,16 @@ static int connection_rollback(lua_State *L) {
 }
 
 /*
+ * last_id = connection:last_id()
+ */
+static int connection_lastid(lua_State *L) {
+    connection_t *conn = (connection_t *)luaL_checkudata(L, 1, DBD_SQLITE_CONNECTION);
+
+    lua_pushinteger(L, sqlite3_last_insert_rowid(conn->sqlite));
+    return 1;
+}
+
+/*
  * __gc 
  */
 static int connection_gc(lua_State *L) {
@@ -224,6 +234,7 @@ int dbd_sqlite3_connection(lua_State *L) {
 	{"prepare", connection_prepare},
 	{"quote", connection_quote},
 	{"rollback", connection_rollback},
+	{"last_id", connection_lastid},
 	{NULL, NULL}
     };
 
@@ -235,18 +246,9 @@ int dbd_sqlite3_connection(lua_State *L) {
 	{NULL, NULL}
     };
 
-    luaL_newmetatable(L, DBD_SQLITE_CONNECTION);
-    luaL_register(L, 0, connection_methods);
-    lua_pushvalue(L,-1);
-    lua_setfield(L, -2, "__index");
-
-    lua_pushcfunction(L, connection_gc);
-    lua_setfield(L, -2, "__gc");
-
-    lua_pushcfunction(L, connection_tostring);
-    lua_setfield(L, -2, "__tostring");
-
-    luaL_register(L, DBD_SQLITE_CONNECTION, connection_class_methods);
+    dbd_register(L, DBD_SQLITE_CONNECTION,
+		 connection_methods, connection_class_methods, 
+		 connection_gc, connection_tostring);
 
     return 1;    
 }

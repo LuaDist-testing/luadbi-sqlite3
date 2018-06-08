@@ -124,6 +124,16 @@ static int statement_execute(lua_State *L) {
 	return 2;
     }
 
+
+    /*
+     * sanity check: make sure our database handle is still open
+     */
+    if (!statement->conn->sqlite) {
+	lua_pushstring(L, DBI_ERR_STATEMENT_BROKEN);
+	lua_error(L);
+    }
+
+
     /*
      * reset the handle before binding params
      * this will be a NOP if the handle has not
@@ -161,10 +171,13 @@ static int statement_execute(lua_State *L) {
 	case LUA_TNUMBER:
 	    errflag = sqlite3_bind_double(statement->stmt, i, lua_tonumber(L, p)) != SQLITE_OK;
 	    break;
-	case LUA_TSTRING:
-	    errflag = sqlite3_bind_text(statement->stmt, i, lua_tostring(L, p), -1, SQLITE_STATIC) != SQLITE_OK;
+	case LUA_TSTRING: {
+	    size_t len = -1;
+	    const char *str = lua_tolstring(L, p, &len);
+	    errflag = sqlite3_bind_text(statement->stmt, i, str, len, SQLITE_STATIC) != SQLITE_OK;
 	    break;
-	case LUA_TBOOLEAN:
+	}
+    case LUA_TBOOLEAN:
 	    errflag = sqlite3_bind_int(statement->stmt, i, lua_toboolean(L, p)) != SQLITE_OK;
 	    break;
 	default:
@@ -335,7 +348,6 @@ static int statement_rows(lua_State *L) {
  */
 static int statement_rowcount(lua_State *L) {
     luaL_error(L, DBI_ERR_NOT_IMPLEMENTED, DBD_SQLITE_STATEMENT, "rowcount");
-
     return 0;
 }
 
@@ -396,18 +408,9 @@ int dbd_sqlite3_statement(lua_State *L) {
 	{NULL, NULL}
     };
 
-    luaL_newmetatable(L, DBD_SQLITE_STATEMENT);
-    luaL_register(L, 0, statement_methods);
-    lua_pushvalue(L,-1);
-    lua_setfield(L, -2, "__index");
-
-    lua_pushcfunction(L, statement_gc);
-    lua_setfield(L, -2, "__gc");
-
-    lua_pushcfunction(L, statement_tostring);
-    lua_setfield(L, -2, "__tostring");
-
-    luaL_register(L, DBD_SQLITE_STATEMENT, statement_class_methods);
+    dbd_register(L, DBD_SQLITE_STATEMENT,
+		 statement_methods, statement_class_methods,
+		 statement_gc, statement_tostring);
 
     return 1;    
 }

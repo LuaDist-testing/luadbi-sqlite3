@@ -1,7 +1,7 @@
 -- This file was automatically generated for the LuaDist project.
 
 package = "luadbi-sqlite3"
-version = "0.5-1"
+version = "0.6-2"
 
 description = {
 	summary = "Database abstraction layer",
@@ -17,23 +17,23 @@ description = {
 	]],
 	
 	license = "MIT/X11",
-	homepage = "http://luadbi.googlecode.com/"
+	homepage = "https://github.com/mwild1/luadbi"
 }
 
 -- LuaDist source
 source = {
-  tag = "0.5-1",
+  tag = "0.6-2",
   url = "git://github.com/LuaDist-testing/luadbi-sqlite3.git"
 }
 -- Original source
 -- source = {
--- 	url = "http://syn.zadzmo.org/projects/luadbi/luadbi-sqlite3-0.5-1.tar.gz",
--- 	dir = "luadbi-sqlite3-0.5-1"
+-- 	url = "git://github.com/mwild1/luadbi",
+-- 	tag = "v0.6"
 -- }
 
 dependencies = {
-	"lua >= 5.1",
-	"luadbi = 0.5"
+	"lua >= 5.1, < 5.4",
+	"luadbi = 0.6"
 }
 
 external_dependencies = {

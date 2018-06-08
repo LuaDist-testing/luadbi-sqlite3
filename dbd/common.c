@@ -1,6 +1,6 @@
 #include <dbd/common.h>
 
-const char *strlower(char *in) {
+const char *dbd_strlower(char *in) {
     char *s = in;
 
     while(*s) {
@@ -15,7 +15,7 @@ const char *strlower(char *in) {
  * replace '?' placeholders with {native_prefix}\d+ placeholders
  * to be compatible with native API
  */
-char *replace_placeholders(lua_State *L, char native_prefix, const char *sql) {
+char *dbd_replace_placeholders(lua_State *L, char native_prefix, const char *sql) {
     size_t len = strlen(sql);
     int num_placeholders = 0;
     int extra_space = 0;
@@ -52,9 +52,13 @@ char *replace_placeholders(lua_State *L, char native_prefix, const char *sql) {
     /*
      * allocate a new string for the converted SQL statement
      */
-    newsql = malloc(sizeof(char) * (len+extra_space+1));
-    memset(newsql, 0, sizeof(char) * (len+extra_space+1));
-    
+    newsql = calloc(len+extra_space+1, sizeof(char));
+    if(!newsql) {
+    	lua_pushliteral(L, "out of memory");
+	/* lua_error does not return. */
+    	lua_error(L);
+    }
+
     /* 
      * copy first char. In valid SQL this cannot be a placeholder
      */
@@ -95,5 +99,36 @@ char *replace_placeholders(lua_State *L, char native_prefix, const char *sql) {
 
     /* fprintf(stderr, "[%s]\n", newsql); */
     return newsql;
+}
+
+void dbd_register(lua_State *L, const char *name,
+		  const luaL_Reg *methods, const luaL_Reg *class_methods,
+		  lua_CFunction gc, lua_CFunction tostring)
+{
+    /* Create a new metatable with the given name and then assign the methods
+     * to it.  Set the __index, __gc and __tostring fields appropriately.
+     */
+    luaL_newmetatable(L, name);
+#if LUA_VERSION_NUM < 502
+    luaL_register(L, 0, methods);
+#else
+    luaL_setfuncs(L, methods, 0);
+#endif
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "__index");
+
+    lua_pushcfunction(L, gc);
+    lua_setfield(L, -2, "__gc");
+
+    lua_pushcfunction(L, tostring);
+    lua_setfield(L, -2, "__tostring");
+
+    /* Create a new table and register the class methods with it */
+    lua_newtable(L);
+#if LUA_VERSION_NUM < 502
+    luaL_register(L, 0, class_methods);
+#else
+    luaL_setfuncs(L, class_methods, 0);
+#endif
 }
 
